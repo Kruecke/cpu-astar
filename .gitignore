@@ -1,0 +1,10 @@
+# Generated output
+Debug/
+Release/
+obj/
+*.pfm
+
+# Project files
+.vscode/
+.vs/
+*.vcxproj.user
