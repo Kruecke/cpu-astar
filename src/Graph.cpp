@@ -14,7 +14,7 @@ Graph::Graph(int width, int height) : m_width(width), m_height(height) {
 }
 
 void Graph::generateObstacles(int amount) {
-#if 1
+#if 0
     std::random_device rd;
 #else
     auto rd = []() { return 0; }; // Fix seed for debugging.

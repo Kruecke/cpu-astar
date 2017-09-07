@@ -4,8 +4,8 @@
 #include <map>
 
 namespace {
-struct NodeCost {
-    NodeCost(Node _node, float _totalCost, float _heuristic, Node _predecessor)
+struct NodeInfo {
+    NodeInfo(Node _node, float _totalCost, float _heuristic, Node _predecessor)
         : node(std::move(_node)), totalCost(_totalCost), heuristic(_heuristic),
           predecessor(std::move(_predecessor)) {}
 
@@ -15,9 +15,14 @@ struct NodeCost {
     Node  predecessor; // to recreate path
 };
 
+// Comparator to find nodes in PriorityQueue.
+struct ValueCompare {
+    bool operator()(const NodeInfo &a, const NodeInfo &b) const { return a.node < b.node; }
+};
+
 // Comparator to put cheapest nodes first.
-struct Compare {
-    bool operator()(const NodeCost &a, const NodeCost &b) {
+struct PrioCompare {
+    bool operator()(const NodeInfo &a, const NodeInfo &b) const {
         return a.totalCost + a.heuristic > b.totalCost + b.heuristic;
     }
 };
@@ -29,7 +34,7 @@ std::vector<Node> aStar(const Graph &graph, const Position &source, const Positi
         return {{graph, destination}};
 
     // Open and closed list
-    PriorityQueue<NodeCost, Compare> open;
+    PriorityQueue<NodeInfo, ValueCompare, PrioCompare> open;
     // (Tree) map seems to perform _much_ better than the unordered hash map!
     std::map<Node, Node> closed; // store predecessor as value to recreate path
 
@@ -67,17 +72,16 @@ std::vector<Node> aStar(const Graph &graph, const Position &source, const Positi
                 continue;
 
             const auto nbTotalCost = current.totalCost + nbStepCost;
-            const auto nbIndex =
-                open.find_if([&](const NodeCost &nc) { return nc.node == nbNode; });
+            const auto nbIt = open.find({nbNode, 0.0f, 0.0f, current.node});
 
             // Node already queued for visiting and other path cost is equal or better
-            if (nbIndex < open.size() && open[nbIndex].totalCost <= nbTotalCost)
+            if (nbIt != open.end() && nbIt->totalCost <= nbTotalCost)
                 continue;
 
             const auto nbHeuristic = (destination - nbNode.position()).length();
 
-            if (nbIndex < open.size())
-                open.update(nbIndex, {nbNode, nbTotalCost, nbHeuristic, current.node});
+            if (nbIt != open.end())
+                open.update(nbIt, {nbNode, nbTotalCost, nbHeuristic, current.node});
             else
                 open.emplace(nbNode, nbTotalCost, nbHeuristic, current.node);
         }
