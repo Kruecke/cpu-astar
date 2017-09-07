@@ -1,6 +1,7 @@
 #include "astar.h"
 
 #include "PriorityQueue.h"
+#include <cmath>
 #include <map>
 
 namespace {
@@ -26,6 +27,28 @@ struct PrioCompare {
         return a.totalCost + a.heuristic > b.totalCost + b.heuristic;
     }
 };
+
+// Heuristic distance calculations
+// http://theory.stanford.edu/~amitp/GameProgramming/Heuristics.html#heuristics-for-grid-maps
+#define D 1
+#define D2 1.414213562373f
+
+#ifndef GRAPH_DIAGONAL_MOVEMENT
+// Manhattan distance
+float heuristicDistance(const Position &a, const Position &b) {
+    auto dx = std::abs(a.x - b.x);
+    auto dy = std::abs(a.y - b.y);
+    return (float) (D * (dx + dy));
+}
+#else
+// Diagonal distance
+float heuristicDistance(const Position &a, const Position &b) {
+    auto dx = std::abs(a.x - b.x);
+    auto dy = std::abs(a.y - b.y);
+    return D * (dx + dy) + (D2 - 2 * D) * std::min(dx, dy);
+}
+#endif
+
 } // namespace
 
 // Implementation like in https://de.wikipedia.org/wiki/A*-Algorithmus#Funktionsweise
@@ -78,7 +101,11 @@ std::vector<Node> aStar(const Graph &graph, const Position &source, const Positi
             if (nbIt != open.end() && nbIt->totalCost <= nbTotalCost)
                 continue;
 
+#if 0
             const auto nbHeuristic = (destination - nbNode.position()).length();
+#else
+            const auto nbHeuristic = heuristicDistance(nbNode.position(), destination);
+#endif
 
             if (nbIt != open.end())
                 open.update(nbIt, {nbNode, nbTotalCost, nbHeuristic, current.node});
